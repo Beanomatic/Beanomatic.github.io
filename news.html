@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="shortcut icon" href="news.ico" type="image/x-icon"/>
+    <title>News Headlines</title>
+    <style>
+        html {
+            font-size: 24px;
+        }
+        body {
+            background-color: lightgray;
+        }
+        table {
+            table-layout: auto;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 5px;
+            text-align: center;
+        }
+        th {
+            background-color: #ccc;
+            width: auto;
+        }
+        td {
+            background-color: var(--color);
+            border: 2px solid black;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        tr:nth-of-type(even) {
+            background-color: #969696; /* Dark grey background color */
+        }
+        /* Media query for mobile devices (adjust font size) */
+        @media (hover: none) and (pointer: coarse) {
+            html {
+                font-size: 42px; /* Increase font size for mobile devices */
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center">News Headlines</h1>
+    <div class="date" style="text-align: center"></div>
+    <div class="timer" style="text-align: center">Next Update in: <b><span id="countdown">3:00</span></b></div>
+    <div style="text-align: right">
+        <h2>:Show/Hide Publishers</h2>
+        <label>
+            <input type="checkbox" id="Ynet" checked> Ynet
+        </label>
+        <label>
+            <input type="checkbox" id="Mako" checked> Mako
+        </label>
+        <label>
+            <input type="checkbox" id="Maariv" checked> Maariv
+        </label>
+        <label>
+            <input type="checkbox" id="Haaretz" checked> Haaretz
+        </label>
+        <label>
+            <input type="checkbox" id="Israel Hayom" checked> Israel hayom
+        </label>
+        <label>
+            <input type="checkbox" id="Walla" checked> Walla
+        </label>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Headline</th>
+                <th>Publisher</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody id="data-table">
+        </tbody>
+    </table>
+
+    <script>
+        function fetchAndRenderData() {
+            updateCountdownTimer();
+            fetch('news.json')  // Replace with your API endpoint
+                .then(response => response.json())
+                .then(data => {
+//                    console.log(data);
+                    const dataTable = document.getElementById('data-table');
+                    dataTable.innerHTML = '';
+
+                    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                    const selectedPublishers = Array.from(checkboxes)
+                        .filter(checkbox => checkbox.checked)
+                        .map(checkbox => checkbox.id);
+
+/*                    let fontSize = '';
+                    if ('ontouchstart' in window) {
+                    // This is a touch device (which is common on mobile devices)
+                        fontSize = 'font-size: 30px';
+                    }
+*/
+//                    for (const item of data) {
+                    data.forEach((item, i) => {
+                        const row = document.createElement('tr');
+//                        row.setAttribute ('id', i);
+                        row.innerHTML = `
+                            <td dir="rtl" style="text-align: right">${item.title}</td>
+                            <td style="background-color: ${item.color}">${item.publisher}</td>
+                            <td >${item.time}</td>
+                        `;
+                        const publisherCell = row.querySelector('td:nth-child(2)');
+                        const publisher = publisherCell.textContent;
+                        document.querySelector('div[class="date"]').innerHTML = new Date().toLocaleDateString();
+
+
+                        // Hide the row if the publisher is not selected
+                        if (selectedPublishers.length === 0 || selectedPublishers.includes(publisher)) {
+                            dataTable.appendChild(row);
+                        } else {
+                            row.classList.add('hidden');
+                            dataTable.appendChild(row);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // jQuery-like :contains selector function
+        function contains(selector, text) {
+            const elements = document.querySelectorAll(selector);
+            return Array.from(elements).filter(element => element.textContent.includes(text));
+        }
+
+        function handleCheckboxChange() {
+            const publisher = this.id;
+            localStorage.setItem(this.id, this.checked);
+            const rows = contains('td', publisher);
+//            console.log(rows);
+            rows.forEach(row => {
+                row.parentElement.classList.toggle('hidden', !this.checked);
+            });
+        }
+
+            // Attach event listeners to checkboxes
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                if (localStorage.getItem(checkbox.id) === 'false') {
+                    checkbox.checked = false;
+                }
+                checkbox.addEventListener('change', handleCheckboxChange);
+            });
+
+        function updateCountdownTimer() {
+            const countdownElement = document.getElementById('countdown');
+            let countdown = 3 * 60 - 2; // 3 minutes in seconds
+
+            function displayTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+            }
+
+            countdownElement.textContent = displayTime(countdown);
+
+            const countdownInterval = setInterval(function () {
+                countdown--;
+                countdownElement.textContent = displayTime(countdown);
+
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+
+        // Initial fetch and render
+        fetchAndRenderData();
+
+        // Periodically fetch and render data every 3 minutes
+        setInterval(fetchAndRenderData, 3 * 60 * 1000);
+
+        // Initial update of the countdown timer
+//        updateCountdownTimer();
+    </script>
+</body>
+</html>
+
